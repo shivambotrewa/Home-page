@@ -33,4 +33,5 @@ def get_video_ids():
     return jsonify(video_data)
 
 if __name__ == '__main__':
-    app.run(debug=True,port=8000)
+    # Bind to 0.0.0.0 to make it accessible over the network
+    app.run(debug=True, host='0.0.0.0', port=5000)
