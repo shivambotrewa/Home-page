@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from ytmusicapi import YTMusic
-from flask-cors import CORS
+from flask_cors import CORS
 
 # Initialize the Flask app
 app = Flask(__name__)
