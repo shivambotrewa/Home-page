@@ -1,37 +1,32 @@
 from flask import Flask, jsonify
-import requests
-from bs4 import BeautifulSoup
+from ytmusicapi import YTMusic
 
+# Initialize the Flask app
 app = Flask(__name__)
 
-@app.route('/get_video_ids', methods=['GET'])
-def get_video_ids():
-    # URL of the website to scrape
-    url = "https://www.genyt.net"
-    
-    # Send a GET request to fetch the page content
-    response = requests.get(url)
-    
-    # Parse the page content using BeautifulSoup
-    soup = BeautifulSoup(response.text, 'html.parser')
-    
-    # Find all divs with the class 'col-lg-12 col-md-12 gytbox mb-3'
-    divs = soup.find_all('div', class_='col-lg-12 col-md-12 gytbox mb-3')
-    
-    # Extract video IDs and associate them with a number
-    video_data = {}
-    for i, div in enumerate(divs, start=1):
-        # Find the 'a' tag within the div
-        a_tag = div.find('a', href=True)
-        if a_tag:
-            href = a_tag['href']
-            # Remove the 'https://video.genyt.net/' part to get only the video ID
-            video_id = href.replace('https://video.genyt.net/', '')
-            video_data[f"Video {i}"] = video_id
-    
-    # Return the video IDs as a JSON response
-    return jsonify(video_data)
+# Initialize YTMusic API
+ytmusic = YTMusic()
 
+@app.route('/charts', methods=['GET'])
+def get_charts():
+    # Fetch chart data for India
+    chart_data = ytmusic.get_charts("IN")
+    
+    # Prepare response with video metadata (videoId, title, artists, etc.)
+    response = []
+    for item in chart_data.get('videos', {}).get('items', []):
+        video_data = {
+            "title": str(item.get('title', 'Unknown Title')),
+            "videoId": str(item.get('videoId', 'Unknown VideoID')),
+            "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
+            "views": str(item.get('views', 'Unknown Views')),
+            "thumbnail": item.get('thumbnails', [{}])[0].get('url', 'No Thumbnail')
+        }
+        response.append(video_data)
+    
+    return jsonify(response)
+
+# Run the Flask web server
 if __name__ == '__main__':
-    # Bind to 0.0.0.0 to make it accessible over the network
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', debug = True, port=8000)
+    
