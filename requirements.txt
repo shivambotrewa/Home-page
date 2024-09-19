@@ -3,3 +3,4 @@ jsonify
 requests
 bs4
 lxml
+ytmusicapi
