@@ -11,6 +11,10 @@ CORS(app)
 # Initialize YTMusic API
 ytmusic = YTMusic()
 
+chart_cache = None
+last_updated = 0
+CACHE_EXPIRATION = 12 * 60 * 60  # 12 hours in seconds
+
 # Route to fetch the video stream URL
 @app.route('/get-audio-url/<videoId>', methods=['GET'])
 def get_audio_url(videoId):
@@ -39,39 +43,45 @@ def get_audio_url(videoId):
         return jsonify({"error": "An error occurred"}), 500
 
 # Route to fetch YouTube music charts for India
-@app.route('/charts', methods=['GET'])
-def get_charts():
-    try:
-        # Fetch chart data for India
-        chart_data = ytmusic.get_charts("IN")
-        
-        # Prepare response with video metadata (videoId, title, artists, etc.)
-        response = []
-        for item in chart_data.get('videos', {}).get('items', []):
-            # Extract videoId from thumbnail URL if videoId is invalid
-            video_id = item.get('videoId')
-            if not video_id or "built-in" in str(video_id):
-                thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
-                if '/vi/' in thumbnail_url:
-                    video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
-                else:
-                    video_id = 'Unknown VideoID'
+# Function to fetch and cache the charts
+def fetch_charts():
+    global chart_cache, last_updated
+    current_time = time.time()
 
-            video_data = {
-                "title": str(item.get('title', 'Unknown Title')),
-                "videoId": str(video_id),
-                "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
-                "views": str(item.get('views', 'Unknown Views')),
-                "thumbnail": item.get('thumbnails', [{}])[0].get('url', 'No Thumbnail')
-            }
-            response.append(video_data)
-        
-        return jsonify(response)
+    # Check if cache needs to be updated
+    if current_time - last_updated > CACHE_EXPIRATION:
+        try:
+            # Fetch chart data for India
+            chart_data = ytmusic.get_charts("IN")
+            response = []
+            for item in chart_data.get('videos', {}).get('items', []):
+                # Extract videoId from thumbnail URL if videoId is invalid
+                video_id = item.get('videoId')
+                if not video_id or "built-in" in str(video_id):
+                    thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
+                    if '/vi/' in thumbnail_url:
+                        video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
+                    else:
+                        video_id = 'Unknown VideoID'
 
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "Failed to fetch charts data"}), 500
+                video_data = {
+                    "title": str(item.get('title', 'Unknown Title')),
+                    "videoId": str(video_id),
+                    "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
+                    "views": str(item.get('views', 'Unknown Views')),
+                    "thumbnail": item.get('thumbnails', [{}])[0].get('url', 'No Thumbnail')
+                }
+                response.append(video_data)
 
+            # Update cache and timestamp
+            chart_cache = response
+            last_updated = current_time
+        except Exception as e:
+            print(f"Error fetching charts: {e}")
+            return None  # Return None if there's an error
+
+    return chart_cache
+    
 # Run the Flask web server
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000)
