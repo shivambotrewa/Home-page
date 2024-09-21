@@ -8,7 +8,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route('/charts', methods=['GET'])
+
 # Initialize YTMusic API
 ytmusic = YTMusic()
 
@@ -16,6 +16,7 @@ chart_cache = None
 last_updated = 0
 CACHE_EXPIRATION = 12 * 60 * 60  # 12 hours in seconds
 
+@app.route('/charts', methods=['GET'])
 # Function to fetch and cache the charts
 def fetch_charts():
     global chart_cache, last_updated
