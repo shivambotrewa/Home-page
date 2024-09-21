@@ -15,34 +15,6 @@ chart_cache = None
 last_updated = 0
 CACHE_EXPIRATION = 12 * 60 * 60  # 12 hours in seconds
 
-# Route to fetch the video stream URL
-@app.route('/get-audio-url/<videoId>', methods=['GET'])
-def get_audio_url(videoId):
-    try:
-        # Fetch data from ytdlp.online API
-        api_url = f'https://ytdlp.online/stream?command=%20-f%20bestaudio%20--get-url%20https%3A%2F%2Fyoutu.be%2F{videoId}'
-        response = requests.get(api_url)
-
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch data from API"}), 500
-
-        # Extract URLs from the response text
-        data = response.text
-        url_match = re.findall(r'(https?://[^\s]+)', data)
-
-        # Filter for the stream URL (googlevideo.com)
-        stream_url = next((url for url in url_match if "googlevideo.com" in url), None)
-
-        if stream_url:
-            return jsonify({"streamUrl": stream_url})
-        else:
-            return jsonify({"error": "Stream URL not found"}), 404
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "An error occurred"}), 500
-
-# Route to fetch YouTube music charts for India
 # Function to fetch and cache the charts
 def fetch_charts():
     global chart_cache, last_updated
@@ -64,12 +36,16 @@ def fetch_charts():
                     else:
                         video_id = 'Unknown VideoID'
 
+                # Clean the thumbnail URL to remove query parameters
+                if thumbnail_url.endswith('.jpg'):
+                    thumbnail_url = thumbnail_url.split('.jpg')[0] + '.jpg'
+
                 video_data = {
                     "title": str(item.get('title', 'Unknown Title')),
                     "videoId": str(video_id),
                     "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
                     "views": str(item.get('views', 'Unknown Views')),
-                    "thumbnail": item.get('thumbnails', [{}])[0].get('url', 'No Thumbnail')
+                    "thumbnail": thumbnail_url
                 }
                 response.append(video_data)
 
