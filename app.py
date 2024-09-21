@@ -36,14 +36,14 @@ def fetch_charts():
                     video_id = 'Unknown VideoID'
 
             # Clean thumbnail URL to remove query parameters
-            clean_thumbnail = re.sub(r'\?.*', '', item.get('thumbnails', [{}])[0].get('url', 'No Thumbnail'))
+            
 
             video_data = {
                 "title": str(item.get('title', 'Unknown Title')),
                 "videoId": str(video_id),
                 "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
                 "views": str(item.get('views', 'Unknown Views')),
-                "thumbnail": clean_thumbnail  # Use the cleaned thumbnail URL
+                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Use the cleaned thumbnail URL
             }
             response.append(video_data)
 
