@@ -1,23 +1,20 @@
-from flask import Flask, jsonify, request
-import requests
-import re
-from ytmusicapi import YTMusic
+from flask import Flask, jsonify
 from flask_cors import CORS
+from ytmusicapi import YTMusic
 import time
 
 # Initialize the Flask app
 app = Flask(__name__)
 CORS(app)
 
-
 # Initialize YTMusic API
 ytmusic = YTMusic()
 
+# Cache for the chart data and the last updated timestamp
 chart_cache = None
 last_updated = 0
 CACHE_EXPIRATION = 12 * 60 * 60  # 12 hours in seconds
 
-@app.route('/charts', methods=['GET'])
 # Function to fetch and cache the charts
 def fetch_charts():
     global chart_cache, last_updated
@@ -57,10 +54,17 @@ def fetch_charts():
             last_updated = current_time
         except Exception as e:
             print(f"Error fetching charts: {e}")
-            return None  # Return None if there's an error
+            return chart_cache if chart_cache is not None else []  # Return cached data if available
 
-    return chart_cache
-    
+    return chart_cache if chart_cache is not None else []  # Ensure a valid response is always returned
+
+# Route to fetch YouTube music charts for India
+@app.route('/charts', methods=['GET'])
+def get_charts():
+    charts = fetch_charts()
+    return jsonify(charts)
+
 # Run the Flask web server
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000)
+    
