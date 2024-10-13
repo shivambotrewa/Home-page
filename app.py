@@ -1,6 +1,4 @@
 from flask import Flask, jsonify, request
-import requests
-import re
 import syncedlyrics
 from ytmusicapi import YTMusic
 from flask_cors import CORS
@@ -18,33 +16,21 @@ cached_charts = None
 last_update_time = None
 CACHE_DURATION = timedelta(hours=12)  # 12-hour cache duration
 
-# Helper function to fetch and cache chart data
 def fetch_charts():
+    """Fetch and cache chart data for India."""
     global cached_charts, last_update_time
     try:
-        # Fetch chart data for India
         chart_data = ytmusic.get_charts("IN")
         response = []
 
         for item in chart_data.get('videos', {}).get('items', []):
-            # Extract videoId from thumbnail URL if videoId is invalid
-            video_id = item.get('videoId')
-            if not video_id or "built-in" in str(video_id):
-                thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
-                if '/vi/' in thumbnail_url:
-                    video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
-                else:
-                    video_id = 'Unknown VideoID'
-
-            # Clean thumbnail URL to remove query parameters
-            
-
+            video_id = item.get('videoId') or extract_video_id(item)
             video_data = {
                 "title": str(item.get('title', 'Unknown Title')),
                 "videoId": str(video_id),
                 "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
                 "views": str(item.get('views', 'Unknown Views')),
-                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Use the cleaned thumbnail URL
+                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Clean thumbnail URL
             }
             response.append(video_data)
 
@@ -54,42 +40,46 @@ def fetch_charts():
         return response
 
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error in fetch_charts: {e}")
         return None
 
-# Route to fetch YouTube music charts for India
+def extract_video_id(item):
+    """Extract video ID from thumbnail URL if videoId is invalid."""
+    thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
+    if '/vi/' in thumbnail_url:
+        return thumbnail_url.split('/vi/')[1].split('/')[0]
+    return 'Unknown VideoID'
+
 @app.route('/charts', methods=['GET'])
 def get_charts():
+    """Route to fetch YouTube music charts for India."""
     global cached_charts, last_update_time
 
     try:
-        # Check if cached data exists and is still valid
         if cached_charts and last_update_time and datetime.now() - last_update_time < CACHE_DURATION:
-            return jsonify(cached_charts)
+            return jsonify({"Response": 200, "data": cached_charts})
         else:
-            # Fetch new chart data and update cache
             new_data = fetch_charts()
             if new_data:
-                return jsonify(new_data)
+                return jsonify({"Response": 200, "data": new_data})
             else:
-                return jsonify({"error": "Failed to fetch charts data"}), 500
+                return jsonify({"Response": 500, "error": "Failed to fetch charts data"}), 500
 
     except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"error": "An error occurred"}), 500
-        
+        print(f"Error in get_charts: {e}")
+        return jsonify({"Response": 500, "error": "An error occurred while fetching charts"}), 500
 
 def get_song_info(video_id):
+    """Fetch song title and artist from video ID."""
     song_info = ytmusic.get_song(video_id)
-    song_title = song_info['videoDetails']['title']
-    first_artist = song_info['videoDetails']['author']
-    return song_title, first_artist
+    return song_info['videoDetails']['title'], song_info['videoDetails']['author']
 
-def getlyrics(Title, Artist):
-    lrc = syncedlyrics.search(f"{Title} {Artist}")
-    return lrc
+def get_lyrics(title, artist):
+    """Fetch lyrics for a song given its title and artist."""
+    return syncedlyrics.search(f"{title} {artist}")
 
 def parse_lyrics(lrc):
+    """Parse synchronized lyrics into a dictionary."""
     lyrics_dict = {}
     if lrc:
         for line in lrc.split('\n'):
@@ -103,31 +93,34 @@ def parse_lyrics(lrc):
     return lyrics_dict
 
 @app.route('/lyrics', methods=['GET'])
-def get_lyrics():
+def get_lyrics_route():
+    """Route to fetch lyrics for a given video ID."""
     video_id = request.args.get('video_id')
     if not video_id:
-        return jsonify({"Responce":400,
-                        "error": "Missing video_id parameter"}), 400
+        return jsonify({"Response": 400, "error": "Missing video_id parameter"}), 400
 
     try:
         title, artist = get_song_info(video_id)
-        lrc = getlyrics(title, artist)
+        lrc = get_lyrics(title, artist)
         lyrics_dict = parse_lyrics(lrc)
 
+        # Decode byte strings for each lyric
+        lyrics_dict = {time: bytes(lyric, 'utf-8').decode('utf-8') for time, lyric in lyrics_dict.items()}
+
         if not lyrics_dict:
-            return jsonify({"Responce": 404,
-                            "error": "lyrics not found"}), 404
+            return jsonify({"Response": 404, "error": "Lyrics not found"}), 404
 
         response = {
-            "Responce": 200,
+            "Response": 200,
             "lyrics": lyrics_dict
         }
         return jsonify(response)
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
+        print(f"Error in get_lyrics_route: {e}")
+        return jsonify({"Response": 500, "error": str(e)}), 500
 
 # Run the Flask web server
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000)
+        
