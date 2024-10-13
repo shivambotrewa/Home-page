@@ -10,6 +10,7 @@ CORS(app)
 
 # Initialize YTMusic API
 ytmusic = YTMusic("oauth.json")
+ytmm = YTMusic()
 
 # Variables to store cached chart data and the last update time
 cached_charts = None
@@ -20,7 +21,7 @@ def fetch_charts():
     """Fetch and cache chart data for India."""
     global cached_charts, last_update_time
     try:
-        chart_data = ytmusic.get_charts("IN")
+        chart_data = ytmm.get_charts("IN")
         response = []
 
         for item in chart_data.get('videos', {}).get('items', []):
