@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize YTMusic API
-ytmusic = YTMusic()
+ytmusic = YTMusic("oauth.json")
 
 # Variables to store cached chart data and the last update time
 cached_charts = None
