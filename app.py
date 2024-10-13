@@ -18,20 +18,31 @@ last_update_time = None
 CACHE_DURATION = timedelta(hours=12)  # 12-hour cache duration
 
 def fetch_charts():
-    """Fetch and cache chart data for India."""
     global cached_charts, last_update_time
     try:
-        chart_data = ytmm.get_charts("IN")
+        # Fetch chart data for India
+        chart_data = ytmusic.get_charts("IN")
         response = []
 
         for item in chart_data.get('videos', {}).get('items', []):
-            video_id = item.get('videoId') or extract_video_id(item)
+            # Extract videoId from thumbnail URL if videoId is invalid
+            video_id = item.get('videoId')
+            if not video_id or "built-in" in str(video_id):
+                thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
+                if '/vi/' in thumbnail_url:
+                    video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
+                else:
+                    video_id = 'Unknown VideoID'
+
+            # Clean thumbnail URL to remove query parameters
+            
+
             video_data = {
                 "title": str(item.get('title', 'Unknown Title')),
                 "videoId": str(video_id),
                 "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
                 "views": str(item.get('views', 'Unknown Views')),
-                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Clean thumbnail URL
+                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Use the cleaned thumbnail URL
             }
             response.append(video_data)
 
@@ -41,9 +52,8 @@ def fetch_charts():
         return response
 
     except Exception as e:
-        print(f"Error in fetch_charts: {e}")
+        print(f"Error: {e}")
         return None
-
 def extract_video_id(item):
     """Extract video ID from thumbnail URL if videoId is invalid."""
     thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
