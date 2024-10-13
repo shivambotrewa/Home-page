@@ -1,8 +1,4 @@
 syncedlyrics
 flask
-jsonify
-requests
-bs4
-lxml
 ytmusicapi
 flask-cors
