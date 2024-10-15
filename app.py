@@ -67,7 +67,7 @@ def fetch_charts():
 
             # Append the information to the response
             response.append({
-                'aimedVideoId': aimed_video_id,  # Aimed videoId from search result
+                'videoId': aimed_video_id,  # Aimed videoId from search result
                 'title': title,
                 'artist': artist,
                 'duration': formatted_duration,
