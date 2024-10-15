@@ -69,7 +69,7 @@ def fetch_charts():
             response.append({
                 'videoId': aimed_video_id,  # Aimed videoId from search result
                 'title': title,
-                'artist': artist,
+                'artists': artist,
                 'duration': formatted_duration,
                 'views': view_count,
                 'thumbnail': f"https://i.ytimg.com/vi/{aimed_video_id}/sddefault.jpg"  # Use the aimed video ID for thumbnail
