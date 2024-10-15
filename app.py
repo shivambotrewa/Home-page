@@ -1,6 +1,4 @@
 from flask import Flask, jsonify, request
-import requests
-import re
 from ytmusicapi import YTMusic
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -10,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize YTMusic API
-ytmusic = YTMusic()
+ytmusic = YTMusic("oauth.json")
 
 # Variables to store cached chart data and the last update time
 cached_charts = None
@@ -25,27 +23,57 @@ def fetch_charts():
         chart_data = ytmusic.get_charts("IN")
         response = []
 
+        # Extract videoIds from the 'videos' section
         for item in chart_data.get('videos', {}).get('items', []):
-            # Extract videoId from thumbnail URL if videoId is invalid
-            video_id = item.get('videoId')
-            if not video_id or "built-in" in str(video_id):
-                thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
-                if '/vi/' in thumbnail_url:
-                    video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
-                else:
-                    video_id = 'Unknown VideoID'
+            thumbnail_url = item.get('thumbnails', [{}])[0].get('url', '')
 
-            # Clean thumbnail URL to remove query parameters
+            if '/vi/' in thumbnail_url:
+                video_id = thumbnail_url.split('/vi/')[1].split('/')[0]
+            else:
+                video_id = 'Unknown VideoID'
+
+            # Skip unknown VideoID cases
+            if video_id == 'Unknown VideoID':
+                continue
+
+            # Fetch detailed song info using the videoId
+            song_data = ytmusic.get_song(video_id)
+
+            # Extract relevant details: title, artist, duration, view count
+            title = song_data['videoDetails'].get('title', 'Unknown Title')
+            artist = song_data['videoDetails'].get('author', 'Unknown Artist')
+            search = f"{title} {artist}"
+
+            # Use the search method to find the YouTube Music version of the video
+            search_results = ytmusic.search(search, filter="songs")
             
+            if search_results:
+                # Extract the video ID from the first result
+                aimed_video_id = search_results[0]['videoId']
+            else:
+                continue
 
-            video_data = {
-                "title": str(item.get('title', 'Unknown Title')),
-                "videoId": str(video_id),
-                "artists": [str(artist.get('name', 'Unknown Artist')) for artist in item.get('artists', [])],
-                "views": str(item.get('views', 'Unknown Views')),
-                "thumbnail": f"https://i.ytimg.com/vi/{video_id}/sddefault.jpg"  # Use the cleaned thumbnail URL
-            }
-            response.append(video_data)
+            # Skip unknown videoID cases in search results
+            if aimed_video_id == 'Unknown VideoID':
+                continue
+
+            duration = song_data['videoDetails'].get('lengthSeconds', 'Unknown Duration')
+            view_count = song_data['videoDetails'].get('viewCount', 'Unknown Views')
+
+            # Convert duration from seconds to minutes and seconds
+            duration_minutes = int(duration) // 60
+            duration_seconds = int(duration) % 60
+            formatted_duration = f"{duration_minutes}:{duration_seconds:02d}"
+
+            # Append the information to the response
+            response.append({
+                'aimedVideoId': aimed_video_id,  # Aimed videoId from search result
+                'title': title,
+                'artist': artist,
+                'duration': formatted_duration,
+                'views': view_count,
+                'thumbnail': f"https://i.ytimg.com/vi/{aimed_video_id}/sddefault.jpg"  # Use the aimed video ID for thumbnail
+            })
 
         # Update cache and timestamp
         cached_charts = response
