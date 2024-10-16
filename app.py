@@ -10,6 +10,19 @@ CORS(app)
 # Initialize YTMusic API
 ytmusic = YTMusic("oauth.json")
 
+def format_views(views):
+    views = int(views)
+    if views >= 1_000_000_000:
+        return f"{views / 1_000_000_000:.1f}B"
+    elif views >= 1_000_000:
+        return f"{views / 1_000_000:.1f}M"
+    elif views >= 1_000:
+        return f"{views / 1_000:.1f}K"
+    else:
+        return str(views)
+
+# Example usage
+
 # Variables to store cached chart data and the last update time
 cached_charts = None
 last_update_time = None
@@ -64,6 +77,7 @@ def fetch_charts():
             duration_minutes = int(duration) // 60
             duration_seconds = int(duration) % 60
             formatted_duration = f"{duration_minutes}:{duration_seconds:02d}"
+            views = format_views(view_count)
 
             # Append the information to the response
             response.append({
@@ -71,7 +85,7 @@ def fetch_charts():
                 'title': title,
                 'artists': artist,
                 'duration': formatted_duration,
-                'views': view_count,
+                'views': views,
                 'thumbnail': f"https://i.ytimg.com/vi/{aimed_video_id}/sddefault.jpg"  # Use the aimed video ID for thumbnail
             })
 
@@ -108,3 +122,4 @@ def get_charts():
 # Run the Flask web server
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000)
+    
