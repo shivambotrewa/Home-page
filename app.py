@@ -2,9 +2,10 @@ from flask import Flask, jsonify
 from ytmusicapi import YTMusic
 import re
 from datetime import datetime, timedelta
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Initialize ytmusicapi
 ytmusic = YTMusic("oauth.json")
