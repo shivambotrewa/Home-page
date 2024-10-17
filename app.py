@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, requests
+from flask import Flask, jsonify
 from ytmusicapi import YTMusic
 import re
 from datetime import datetime, timedelta
