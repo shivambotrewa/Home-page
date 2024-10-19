@@ -50,7 +50,7 @@ def get_song_details(video_id):
     
     # Extract song details with safe access
     title = song_data['videoDetails'].get('title','')
-    artists = song_data['videoDetails'].get('author', '')
+    artists = song_data['microformat']['microformatDataRenderer']['pageOwnerDetails'].get('name','unknown')
     duration = song_data['videoDetails'].get('lengthSeconds', 0)  # duration in seconds
     views = song_data['videoDetails'].get('viewCount', 'Unknown')
     sea = f"{title} {artists}"
@@ -140,4 +140,4 @@ def get_charts():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=8000)
 
-    
+
