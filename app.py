@@ -13,7 +13,7 @@ ytmusic = YTMusic("oauth.json")
 
 def rmpun(query):
 # Characters you want to keep
-    keep_chars = "-"
+    keep_chars = "-,:"
     # Remove all punctuation except characters in keep_chars
     clean_query = ''.join(char for char in query if char not in string.punctuation or char in keep_chars)
     return clean_query
@@ -53,7 +53,7 @@ def get_song_details(video_id):
     artists = song_data['videoDetails'].get('author', 'Unknown')
     duration = song_data['videoDetails'].get('lengthSeconds', 0)  # duration in seconds
     views = song_data['videoDetails'].get('viewCount', 'Unknown')
-    sea = f"{title} {artists}"
+    sea = f"{title} , views: {views}"
     search = rmpun(sea)
 
     # Use the search method to find the YouTube Music version of the video
