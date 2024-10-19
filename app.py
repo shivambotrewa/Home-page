@@ -49,15 +49,15 @@ def get_song_details(video_id):
     song_data = ytmusic.get_song(video_id)
     
     # Extract song details with safe access
-    title = song_data['videoDetails'].get('title', 'Unknown')
-    artists = song_data['videoDetails'].get('author', 'Unknown')
+    title = song_data['videoDetails'].get('title','')
+    artists = song_data['videoDetails'].get('author', '')
     duration = song_data['videoDetails'].get('lengthSeconds', 0)  # duration in seconds
     views = song_data['videoDetails'].get('viewCount', 'Unknown')
-    sea = f"{title} , views: {views}"
+    sea = f"{title} {artists}"
     search = rmpun(sea)
 
     # Use the search method to find the YouTube Music version of the video
-    search_results = ytmusic.search(search, filter="songs")
+    search_results = ytmusic.search(search,"songs")
     
     if search_results:
         aimed_video_id = search_results[0].get('videoId')
