@@ -50,10 +50,11 @@ def get_song_details(video_id):
     
     # Extract song details with safe access
     title = song_data['videoDetails'].get('title','')
+    author= song_data['videoDetails'].get('author','')
     artists = song_data['microformat']['microformatDataRenderer']['pageOwnerDetails'].get('name','unknown')
     duration = song_data['videoDetails'].get('lengthSeconds', 0)  # duration in seconds
     views = song_data['videoDetails'].get('viewCount', 'Unknown')
-    sea = f"{title} {artists}"
+    sea = f"{title} {author} {artists}"
     search = rmpun(sea)
 
     # Use the search method to find the YouTube Music version of the video
