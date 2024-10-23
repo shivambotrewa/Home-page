@@ -54,7 +54,7 @@ def get_song_details(video_id):
     artists = song_data['microformat']['microformatDataRenderer']['pageOwnerDetails'].get('name','unknown')
     duration = song_data['videoDetails'].get('lengthSeconds', 0)  # duration in seconds
     views = song_data['videoDetails'].get('viewCount', 'Unknown')
-    sea = f"{title} {author} {artists}"
+    sea = f"{title}, from {artists}"
     search = rmpun(sea)
 
     # Use the search method to find the YouTube Music version of the video
